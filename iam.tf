@@ -1,6 +1,3 @@
-# ════════════════════════════════════════════════════════════
-#   IAM — Política de asunción común para todas las Lambdas
-# ════════════════════════════════════════════════════════════
 data "aws_iam_policy_document" "lambda_assume" {
   statement {
     effect  = "Allow"
@@ -12,10 +9,6 @@ data "aws_iam_policy_document" "lambda_assume" {
   }
 }
 
-# ════════════════════════════════════════════════════════════
-#   Rol: Orquestador
-#   Permisos: DynamoDB read/write + invoke Lambdas de nivel + logs
-# ════════════════════════════════════════════════════════════
 resource "aws_iam_role" "orchestrator" {
   name               = "${var.project}-orchestrator-role"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
@@ -29,7 +22,6 @@ resource "aws_iam_role_policy" "orchestrator" {
     Version = "2012-10-17"
     Statement = [
       {
-        # DynamoDB: estado e historial
         Effect = "Allow"
         Action = [
           "dynamodb:GetItem",
@@ -42,7 +34,6 @@ resource "aws_iam_role_policy" "orchestrator" {
         ]
       },
       {
-        # Invocar Lambdas de nivel
         Effect = "Allow"
         Action = ["lambda:InvokeFunction"]
         Resource = [
@@ -64,10 +55,6 @@ resource "aws_iam_role_policy" "orchestrator" {
   })
 }
 
-# ════════════════════════════════════════════════════════════
-#   Rol: Lambdas de nivel (shared)
-#   Permisos: solo logs (no acceden a DynamoDB → least privilege)
-# ════════════════════════════════════════════════════════════
 resource "aws_iam_role" "level" {
   name               = "${var.project}-level-role"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
@@ -78,10 +65,6 @@ resource "aws_iam_role_policy_attachment" "level_logs" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# ════════════════════════════════════════════════════════════
-#   Rol: Health check
-#   Permisos: solo lectura de estado + logs
-# ════════════════════════════════════════════════════════════
 resource "aws_iam_role" "health" {
   name               = "${var.project}-health-role"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume.json

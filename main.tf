@@ -24,7 +24,6 @@ provider "aws" {
 }
 
 locals {
-  # Lambdas de nivel — se generan de forma uniforme con for_each
   level_lambdas = {
     "level-1" = { description = "Servicio Nivel 1 - Full" }
     "level-2" = { description = "Servicio Nivel 2 - Degradado" }

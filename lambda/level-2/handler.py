@@ -1,10 +1,3 @@
-"""
-Lambda Nivel 2 — Servicio Degradado
-───────────────────────────────────
-Funciona con un subconjunto de capacidades, priorizando servicios esenciales.
-En producción aquí se ejecutarían SOLO: validaciones críticas, operación core.
-Se omiten: analytics, recomendaciones, logs verbosos.
-"""
 import json
 
 

@@ -1,9 +1,3 @@
-"""
-Lambda Nivel 3 — Operación Mínima
-─────────────────────────────────
-El sistema está en modo mantenimiento. Solo responde con mensajes informativos.
-No se ejecuta lógica de negocio.
-"""
 import json
 
 

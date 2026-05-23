@@ -1,10 +1,3 @@
-"""
-Lambda Nivel 1 — Servicio Full
-──────────────────────────────
-Responde con todas las capacidades activas.
-En producción aquí se ejecutarían: validaciones completas, analytics,
-recomendaciones, logging detallado, etc.
-"""
 import json
 
 

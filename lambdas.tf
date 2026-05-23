@@ -1,6 +1,3 @@
-# ════════════════════════════════════════════════════════════
-#   Empaquetado de código fuente
-# ════════════════════════════════════════════════════════════
 data "archive_file" "orchestrator" {
   type        = "zip"
   source_file = "${path.module}/lambda/orchestrator/handler.py"
@@ -20,9 +17,6 @@ data "archive_file" "health" {
   output_path = "${path.module}/lambda/health/handler.zip"
 }
 
-# ════════════════════════════════════════════════════════════
-#   CloudWatch Log Groups (retención controlada → ahorra costos)
-# ════════════════════════════════════════════════════════════
 resource "aws_cloudwatch_log_group" "orchestrator" {
   name              = "/aws/lambda/${var.project}-orchestrator"
   retention_in_days = var.log_retention_days
@@ -39,9 +33,6 @@ resource "aws_cloudwatch_log_group" "health" {
   retention_in_days = var.log_retention_days
 }
 
-# ════════════════════════════════════════════════════════════
-#   Lambdas de Nivel (1, 2, 3) — generadas con for_each
-# ════════════════════════════════════════════════════════════
 resource "aws_lambda_function" "level" {
   for_each = local.level_lambdas
 
@@ -58,9 +49,6 @@ resource "aws_lambda_function" "level" {
   depends_on = [aws_cloudwatch_log_group.level]
 }
 
-# ════════════════════════════════════════════════════════════
-#   Lambda Orquestadora
-# ════════════════════════════════════════════════════════════
 resource "aws_lambda_function" "orchestrator" {
   function_name    = "${var.project}-orchestrator"
   description      = "Orquestador: decide nivel y rutea a Lambda correspondiente"
@@ -88,9 +76,6 @@ resource "aws_lambda_function" "orchestrator" {
   ]
 }
 
-# ════════════════════════════════════════════════════════════
-#   Lambda Health Check
-# ════════════════════════════════════════════════════════════
 resource "aws_lambda_function" "health" {
   function_name    = "${var.project}-health"
   description      = "Endpoint de salud — consulta estado sin modificarlo"

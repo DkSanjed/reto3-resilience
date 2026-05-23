@@ -1,13 +1,8 @@
-# ════════════════════════════════════════════════════════════
-#   CloudWatch Dashboard
-#   Free Tier: 3 dashboards gratis. Usamos 1.
-# ════════════════════════════════════════════════════════════
 resource "aws_cloudwatch_dashboard" "main" {
   dashboard_name = "${var.project}-resilience"
 
   dashboard_body = jsonencode({
     widgets = [
-      # ── Nivel actual del servicio ────────────────────────
       {
         type   = "metric"
         x      = 0
@@ -29,7 +24,6 @@ resource "aws_cloudwatch_dashboard" "main" {
           }
         }
       },
-      # ── Contador de errores y racha de éxitos ────────────
       {
         type   = "metric"
         x      = 12
@@ -49,7 +43,6 @@ resource "aws_cloudwatch_dashboard" "main" {
           title   = "Contadores: errores acumulados y racha de éxitos"
         }
       },
-      # ── Peticiones con error por minuto ──────────────────
       {
         type   = "metric"
         x      = 0
@@ -68,7 +61,6 @@ resource "aws_cloudwatch_dashboard" "main" {
           title   = "Peticiones con error por minuto"
         }
       },
-      # ── Transiciones de nivel ────────────────────────────
       {
         type   = "metric"
         x      = 12
@@ -87,7 +79,6 @@ resource "aws_cloudwatch_dashboard" "main" {
           title   = "Transiciones de nivel (cambios de estado)"
         }
       },
-      # ── Invocaciones por Lambda ──────────────────────────
       {
         type   = "metric"
         x      = 0
@@ -113,12 +104,6 @@ resource "aws_cloudwatch_dashboard" "main" {
   })
 }
 
-# ════════════════════════════════════════════════════════════
-#   CloudWatch Alarms
-#   Free Tier: 10 alarms gratis. Usamos 3.
-# ════════════════════════════════════════════════════════════
-
-# 1. Alarma: el sistema entró a Nivel 3 (mantenimiento)
 resource "aws_cloudwatch_metric_alarm" "level_3_entered" {
   alarm_name          = "${var.project}-system-in-maintenance"
   alarm_description   = "CRÍTICA: El sistema está en Nivel 3 (modo mantenimiento)"
@@ -132,7 +117,6 @@ resource "aws_cloudwatch_metric_alarm" "level_3_entered" {
   treat_missing_data  = "notBreaching"
 }
 
-# 2. Alarma: tasa alta de errores
 resource "aws_cloudwatch_metric_alarm" "high_error_rate" {
   alarm_name          = "${var.project}-high-error-rate"
   alarm_description   = "ADVERTENCIA: Más de 10 errores en el último minuto"
@@ -146,7 +130,6 @@ resource "aws_cloudwatch_metric_alarm" "high_error_rate" {
   treat_missing_data  = "notBreaching"
 }
 
-# 3. Alarma: errores en la Lambda orquestadora
 resource "aws_cloudwatch_metric_alarm" "orchestrator_errors" {
   alarm_name          = "${var.project}-orchestrator-errors"
   alarm_description   = "ADVERTENCIA: Errores de runtime en la Lambda orquestadora"

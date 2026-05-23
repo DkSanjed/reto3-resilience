@@ -1,14 +1,3 @@
-"""
-Lambda Orquestadora — Reto 3 UltraSeguros
-─────────────────────────────────────────
-Responsabilidades:
-  1. Recibir la petición del API Gateway.
-  2. Actualizar el estado en DynamoDB de forma ATÓMICA.
-  3. Decidir el nivel de servicio aplicando la lógica de transición.
-  4. Registrar transiciones en una tabla de historial.
-  5. Emitir métricas custom a CloudWatch (formato EMF).
-  6. Invocar la Lambda del nivel correspondiente y devolver su respuesta.
-"""
 import json
 import os
 import time
@@ -34,19 +23,12 @@ LEVEL_LAMBDAS = {
     3: os.environ["LEVEL_3_FUNCTION"],
 }
 
-# ── Umbrales de transición ────────────────────────────────
-ERROR_L2         = 5    # errores acumulados → Nivel 2
-ERROR_L3         = 10   # errores acumulados → Nivel 3
-RECOVERY_STREAK  = 10   # éxitos consecutivos → sube un nivel
+ERROR_L2         = 5
+ERROR_L3         = 10
+RECOVERY_STREAK  = 10
 METRIC_NAMESPACE = "UltraSeguros/Resilience"
 
-
-# ══════════════════════════════════════════════════════════
-#   Métricas (Embedded Metric Format — gratis en CloudWatch)
-# ══════════════════════════════════════════════════════════
 def emit_metrics(level, error_count, success_streak, has_error, transition=False):
-    """Emite métricas custom a CloudWatch vía formato EMF.
-    No requiere llamadas API extra, va embebido en los logs."""
     metrics_defs = [
         {"Name": "CurrentLevel",   "Unit": "None"},
         {"Name": "ErrorCount",     "Unit": "Count"},
@@ -75,21 +57,12 @@ def emit_metrics(level, error_count, success_streak, has_error, transition=False
 
     print(json.dumps(metric_log))
 
-
-# ══════════════════════════════════════════════════════════
-#   Operaciones atómicas en DynamoDB
-# ══════════════════════════════════════════════════════════
 def update_counters_atomic(has_error):
-    """Incrementa contadores SIN race conditions usando UpdateItem.
 
-    DynamoDB garantiza atomicidad: dos invocaciones concurrentes
-    nunca pierden incrementos."""
     if has_error:
-        # Suma 1 a error_count y resetea success_streak
         update_expr = "ADD error_count :inc SET success_streak = :zero"
         expr_vals   = {":inc": 1, ":zero": 0}
     else:
-        # Suma 1 a success_streak
         update_expr = "ADD success_streak :inc"
         expr_vals   = {":inc": 1}
 
@@ -108,19 +81,13 @@ def update_counters_atomic(has_error):
 
 
 def apply_level_transition(state, new_level, reason):
-    """Cambia el nivel con conditional write (optimistic locking).
-
-    Si otra invocación ya cambió el nivel mientras tanto, se ignora
-    silenciosamente — no hay sobreescritura."""
     old_level = state["level"]
 
     try:
         if new_level < old_level:
-            # Recuperación: limpia contadores
             update_expr = "SET #lvl = :new, error_count = :zero, success_streak = :zero"
             expr_vals   = {":new": new_level, ":old": old_level, ":zero": 0}
         else:
-            # Degradación: solo actualiza el nivel
             update_expr = "SET #lvl = :new"
             expr_vals   = {":new": new_level, ":old": old_level}
 
@@ -132,7 +99,6 @@ def apply_level_transition(state, new_level, reason):
             ExpressionAttributeValues=expr_vals,
         )
 
-        # Registrar transición en tabla de historial
         transitions_table.put_item(Item={
             "pk":          "TRANSITION",
             "timestamp":   datetime.now(timezone.utc).isoformat(),
@@ -155,12 +121,7 @@ def apply_level_transition(state, new_level, reason):
         raise
 
 
-# ══════════════════════════════════════════════════════════
-#   Invocación con fallback (resiliencia)
-# ══════════════════════════════════════════════════════════
 def invoke_level_lambda(level, payload):
-    """Invoca la Lambda del nivel. Si falla, devuelve fallback genérico
-    en lugar de propagar la excepción (graceful degradation)."""
     function_name = LEVEL_LAMBDAS[level]
 
     try:
@@ -181,21 +142,15 @@ def invoke_level_lambda(level, payload):
         }
 
 
-# ══════════════════════════════════════════════════════════
-#   Handler principal
-# ══════════════════════════════════════════════════════════
 def lambda_handler(event, context):
-    # 1. Parsear body de la petición ──────────────────────
     try:
         body      = json.loads(event.get("body") or "{}")
         has_error = bool(body.get("error", False))
     except Exception:
         has_error = False
 
-    # 2. Actualizar contadores atómicamente ───────────────
     state = update_counters_atomic(has_error)
 
-    # 3. Decidir si hay transición de nivel ───────────────
     current_level = state["level"]
     new_level     = current_level
 
@@ -218,7 +173,6 @@ def lambda_handler(event, context):
             state["error_count"]    = 0
             state["success_streak"] = 0
 
-    # 4. Emitir métricas a CloudWatch ─────────────────────
     emit_metrics(
         level=current_level,
         error_count=state["error_count"],
@@ -227,7 +181,6 @@ def lambda_handler(event, context):
         transition=transition_happened,
     )
 
-    # 5. Invocar Lambda del nivel correspondiente ─────────
     return invoke_level_lambda(current_level, {
         "has_error": has_error,
         "level":     current_level,
