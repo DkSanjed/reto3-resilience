@@ -373,24 +373,6 @@ aws logs tail /aws/lambda/ultraseguros-orchestrator --follow --region us-east-1
 terraform destroy
 ```
 
----
-
-## Análisis de costos — AWS Free Tier
-
-| Servicio | Uso durante prueba | Límite Free Tier | Costo estimado |
-|----------|--------------------|------------------|----------------|
-| Lambda invocaciones | ~560 (140 × 4 Lambdas) | 1.000.000 / mes | $0.00 |
-| Lambda cómputo | < 1 GB-segundo | 400.000 GB-s / mes | $0.00 |
-| API Gateway requests | ~140 | 1.000.000 / mes | $0.00 |
-| DynamoDB operaciones | ~280 R/W | 25 WCU/RCU | $0.00 |
-| CloudWatch métricas | 5 custom | 10 métricas gratis | $0.00 |
-| CloudWatch dashboard | 1 | 3 dashboards gratis | $0.00 |
-| CloudWatch alarmas | 3 | 10 alarmas gratis | $0.00 |
-| CloudWatch logs | < 50 MB | 5 GB / mes | $0.00 |
-| **Total estimado** | | | **$0.00** |
-
----
-
 ## Infraestructura como código
 
 Toda la infraestructura está definida en Terraform, organizada por responsabilidad:
